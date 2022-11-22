@@ -59,6 +59,14 @@ add_action( 'import_from_mastodon_after_import', function( $post_id, $status ) {
     wp_update_post( $post_data );
     remove_filter( 'wp_insert_post_empty_content', '__return_false' );
 
+    // Add Mastodon URL to syndication links only to
+    // toots and replies, boosts and faves shouldn't have
+    // syndication links.
+    if ( empty( $status->favourited ) && empty( $status->reblog ) ) {
+        $urls[] = $status->url;
+        update_post_meta( $post_id, 'mf2_syndication', $urls );
+    }
+    
     // Set default post kind for toots
     set_post_kind( $post_id, 'note' );
   
@@ -136,22 +144,4 @@ add_filter( 'import_from_mastodon_post_content', function( $content, $status ) {
     }
   
     return $content;
-}, 1, 2 );
-
-/**
- * Adds Mastodon URL to syndication links
- */
-add_filter( 'syn_add_links', function( $urls, $object_id ) {
-    if ( ! empty( $get_post_meta( $object_id, 'mf2_like-of' ) ) || ! empty( $get_post_meta( $object_id, 'mf2_repost-of' ) ) ) {
-        // Favourites and boosts shouldn't get syndication links.
-        return;
-    }
-
-    $mastodon_url = get_post_meta( $object_id, '_import_from_mastodon_url', true );
-  
-    if ( ! empty( $mastodon_url ) ) {
-        $urls[] = $mastodon_url;
-    }
-  
-    return $urls;
 }, 1, 2 );
