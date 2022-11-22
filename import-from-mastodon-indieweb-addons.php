@@ -10,3 +10,20 @@
  */
 
 
+/**
+ * Adds Mastodon URL to syndication links
+ */
+add_filter( 'syn_add_links', function( $urls, $object_id ) {
+    if ( ! empty( $get_post_meta( $object_id, 'mf2_like-of' ) ) || ! empty( $get_post_meta( $object_id, 'mf2_repost-of' ) ) ) {
+      // Favourites and boosts shouldn't get syndication links.
+      return;
+    }
+
+    $mastodon_url = get_post_meta( $object_id, '_import_from_mastodon_url', true );
+  
+    if ( ! empty( $mastodon_url ) ) {
+      $urls[] = $mastodon_url;
+    }
+  
+    return $urls;
+  }, 1, 2 );
