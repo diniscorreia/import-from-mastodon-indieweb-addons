@@ -10,6 +10,104 @@
  */
 
 /**
+ * Build cite array
+ */
+if ( ! function_exists( 'build_toot_cite' ) ) {
+	function build_toot_cite( $status ) {
+		$cite            = array();
+		$cite['name']    = 'Toot';
+		$cite['url']     = $status->url;
+		$cite['publication'] = wp_parse_url( $status->url, PHP_URL_HOST );
+		$cite['published'] = $status->created_at;
+
+		$author          = array();
+		$author['name']  = $status->account->display_name;
+		$author['url']   = $status->account->url;
+		$author['photo'] = esc_url( $status->account->avatar_static );
+		$author          = array_filter( $author );
+		$author['type']  = 'card';
+		$cite['author']  = jf2_to_mf2( $author );
+
+		$build = array();
+		foreach ( $cite as $key => $value ) {
+			$build[ $key ] = is_array( $value ) ? $value : array( $value );
+		}
+		$cite = array( 'properties' => $build );
+		$cite['type'] = array( 'h-cite' );
+
+		return $cite;
+	}
+}
+
+/**
+ * Sets post kinds and store microformats data
+ */
+add_action( 'import_from_mastodon_after_import', function( $post_id, $status ) {
+    // We need the Post Kinds plugi for this
+    if ( ! function_exists( 'set_post_kind' ) ) {
+        return;
+    }  
+    
+    // Microblog posts/notes don't really need titles.
+    // Necessary to plug to some hook for allowin to
+    // save a post with no title and content.
+    $post_data = array(
+        'ID'           => $post_id,
+        'post_title'   => ''
+    );
+    add_filter( 'wp_insert_post_empty_content', '__return_false' );
+    wp_update_post( $post_data );
+    remove_filter( 'wp_insert_post_empty_content', '__return_false' );
+
+    // Set default post kind for toots
+    set_post_kind( $post_id, 'note' );
+  
+    if ( ! empty( $status->favourited ) ) {
+        // Set "like" post kind for favourites
+        set_post_kind( $post_id, 'like' );
+
+        // Save microformats data
+        update_post_meta( $post_id, 'mf2_like-of', build_toot_cite( $status ) );
+    } elseif ( isset( $status->reblog->url ) && isset( $status->reblog->account->username ) ) {
+        // Set "repost" post kind for boosts
+        set_post_kind( $post_id, 'repost' );
+
+        // Save microformats data
+        update_post_meta( $post_id, 'mf2_repost-of', build_toot_cite( $status->reblog ) );
+    } elseif ( isset( $status->in_reply_to_id ) ) {
+        // Set "reply" post kind for... well, replies
+        set_post_kind( $post_id, 'reply' );
+        
+        // Fetch parent toot to get some context
+        $parent = wp_remote_get(
+            esc_url_raw( 'https://' . wp_parse_url( $status->account->url, PHP_URL_HOST ) . '/api/v1/statuses/' . $status->in_reply_to_id ),
+            array(
+                'headers' => array( 'Accept' => 'application/json' ),
+                'timeout' => 11,
+            )
+        );
+  
+        if ( is_wp_error( $parent ) ) {
+            error_log( '[Import From Mastodon] Failed to get parent: ' . $parent->get_error_message() );
+        } else {
+            $parent = wp_remote_retrieve_body( $parent );
+            $parent = json_decode( $parent );
+            
+            // If we are replying to our own toot, delete the post.
+            // Replies to our own content should be backfed into the
+            // site as comments on the original post (eg: using Brid.gy)
+            if ( $status->account->url === $parent->account->url ) {
+                wp_delete_post( $post_id, true );
+                return;
+            }
+            
+            // Save microformats data
+            update_post_meta( $post_id, 'mf2_in-reply-to', build_toot_cite( $parent ) );
+      }
+    }
+}, 1, 2 );
+
+/**
  * Cleans up post content
  */
 add_filter( 'import_from_mastodon_post_content', function( $content, $status ) {
