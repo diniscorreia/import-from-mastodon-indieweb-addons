@@ -116,6 +116,23 @@ add_action( 'import_from_mastodon_after_import', function( $post_id, $status ) {
 }, 1, 2 );
 
 /**
+ * Removes attachments from favourites and boosts
+ */
+add_action( 'import_from_mastodon_after_attachments', function( $post_id, $status ) {
+    if ( ! empty( $status->favourited ) || ! empty( $status->reblog ) ) {
+        delete_post_thumbnail( $post_id );
+
+        $post_media = get_attached_media( 'image', $post_id );
+
+        if ( $post_media ) {
+            foreach ( $post_media as $media ) {
+                wp_delete_attachment( $post_id, true );
+            }
+        }
+    }
+}, 1, 2 );
+
+/**
  * Cleans up post content
  */
 add_filter( 'import_from_mastodon_post_content', function( $content, $status ) {
