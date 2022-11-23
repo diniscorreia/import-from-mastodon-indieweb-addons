@@ -74,11 +74,19 @@ add_action( 'import_from_mastodon_after_import', function( $post_id, $status ) {
         // Set "like" post kind for favourites
         set_post_kind( $post_id, 'like' );
 
+        // Post Kinds maps to post formart after Micropub
+        // publish, but we can set those as well
+        set_post_format( $post_id, 'link' );
+        
         // Save microformats data
         update_post_meta( $post_id, 'mf2_like-of', build_toot_cite( $status ) );
     } elseif ( isset( $status->reblog->url ) && isset( $status->reblog->account->username ) ) {
         // Set "repost" post kind for boosts
         set_post_kind( $post_id, 'repost' );
+
+        // Post Kinds maps to post formart after Micropub
+        // publish, but we can set those as well
+        set_post_format( $post_id, 'link' );
 
         // Save microformats data
         update_post_meta( $post_id, 'mf2_repost-of', build_toot_cite( $status->reblog ) );
