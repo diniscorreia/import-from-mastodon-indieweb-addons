@@ -16,7 +16,7 @@ This plugin makes [Jan Boddez](https://github.com/janboddez/)’s [Import From M
 ## Installation
 Please bear in mind this was written for personal use and there might be errors. For this to work you’ll obviously need the [Import From Mastodon](https://github.com/janboddez/import-from-mastodon), [Post Kinds](https://github.com/dshanske/indieweb-post-kinds) and [Syndication Links](https://github.com/dshanske/syndication-links) plugins.
 
-Just download the [ZIP file](https://github.com/janboddez/import-from-mastodon/archive/refs/heads/master.zip), upload to `wp-content/mu-plugins` (if you don’t see a `mu-plugins` folder you can just create it) and unzip.
+Just download the [ZIP file](https://github.com/janboddez/import-from-mastodon/archive/refs/heads/master.zip), unzip it and upload the `import-from-mastodon-indieweb-addons.php` file to `wp-content/mu-plugins` (if you don’t see a `mu-plugins` folder you can just create it) and unzip.
 
 That’s it! Since this is a [Must Use Plugin](https://wordpress.org/support/article/must-use-plugins/) it will be automatically enabled. 
 
